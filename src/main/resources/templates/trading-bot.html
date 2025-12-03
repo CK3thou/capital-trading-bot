@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSI Trading Bot - Capital.com</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:hover,
+        select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        button.secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        button.start {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        button.start:hover {
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        button.stop {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        button.stop:hover {
+            box-shadow: 0 5px 15px rgba(235, 51, 73, 0.4);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .signal-badge {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .signal-badge.buy {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .signal-badge.sell {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .signal-badge.hold {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .signal-badge.neutral {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .rsi-chart-container {
+            height: 300px;
+            position: relative;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chart-link-button {
+            background: #6c757d;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-block;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .chart-link-button:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 RSI Trading Bot</h1>
+            <p>Automated Trading Based on RSI Indicators - Capital.com API</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel">
+                <h2>Trading Controls</h2>
+
+                <div id="statusMessage" class="status-message"></div>
+
+                <!-- Account Selection -->
+                <div class="form-group">
+                    <label for="accountType">Account Type</label>
+                    <select id="accountType" onchange="handleAccountTypeChange()">
+                        <option value="">Select Account Type...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="account">Select Account</label>
+                    <select id="account" onchange="handleAccountChange()">
+                        <option value="">Select Account...</option>
+                    </select>
+                </div>
+
+                <!-- Market Category Selection -->
+                <div class="form-group">
+                    <label for="marketCategory">Market Category</label>
+                    <select id="marketCategory" onchange="handleCategoryChange()">
+                        <option value="">Select Category...</option>
+                    </select>
+                </div>
+
+                <!-- Market Selection -->
+                <div class="form-group">
+                    <label for="market">Select Market</label>
+                    <select id="market" onchange="handleMarketChange()">
+                        <option value="">Select Market...</option>
+                    </select>
+                </div>
+
+                <!-- Trading Controls -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Current RSI</div>
+                        <div class="stat-value" id="rsiValue">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Position</div>
+                        <div class="stat-value" id="positionValue">NONE</div>
+                    </div>
+                </div>
+
+                <div id="signalBadge"></div>
+
+                <button class="start" onclick="startTradingBot()">▶ Start Trading Bot</button>
+                <button class="stop secondary" onclick="stopTradingBot()">⏹ Stop Trading Bot</button>
+
+                <!-- Chart Link -->
+                <a id="chartLink" class="chart-link-button" target="_blank" style="display:none;">
+                    📊 View Advanced Chart
+                </a>
+            </div>
+
+            <!-- Right Panel: Main Chart -->
+            <div class="panel">
+                <h2>Price Chart</h2>
+                <div id="loadingChart" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading chart data...</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panels -->
+        <div class="bottom-grid">
+            <!-- RSI Indicator Chart -->
+            <div class="panel">
+                <h2>RSI Indicator (14-Period)</h2>
+                <div id="loadingRSI" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading RSI data...</p>
+                </div>
+                <div class="rsi-chart-container">
+                    <canvas id="rsiChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Market Info -->
+            <div class="panel">
+                <h2>Market Information</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Bid Price</div>
+                        <div class="stat-value" id="bidPrice">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Ask Price</div>
+                        <div class="stat-value" id="askPrice">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">24h Change</div>
+                        <div class="stat-value" id="priceChange">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Trading Status</div>
+                        <div class="stat-value" id="tradingStatus">ACTIVE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let chartInstance = null;
+        let rsiChartInstance = null;
+        let selectedMarket = null;
+        let botRunning = false;
+
+        // API base URL
+        const API_BASE = '/api/trading-bot';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAccountTypes();
+        });
+
+        // Load account types
+        async function loadAccountTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/account-types`);
+                const data = await response.json();
+                const select = document.getElementById('accountType');
+                select.innerHTML = '<option value="">Select Account Type...</option>';
+                data.accountTypes.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('Error loading account types: ' + error.message, 'error');
+            }
+        }
+
+        // Handle account type change
+        async function handleAccountTypeChange() {
+            const accountType = document.getElementById('accountType').value;
+            if (!accountType) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/accounts?accountType=${accountType}`);
+                const accounts = await response.json();
+                const select = document.getElementById('account');
+                select.innerHTML = '<option value="">Select Account...</option>';
+                accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.accountId;
+                    option.textContent = `${account.accountName} (${account.currency}) - Balance: ${account.balance}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('Error loading accounts: ' + error.message, 'error');
+            }
+        }
+
+        // Handle account change
+        async function handleAccountChange() {
+            const accountId = document.getElementById('account').value;
+            if (!accountId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/switch-account?accountId=${accountId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showStatus(`Switched to account: ${accountId}`, 'success');
+                    loadMarketCategories();
+                } else {
+                    showStatus(`Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('Error switching account: ' + error.message, 'error');
+            }
+        }
+
+        // Load market categories
+        async function loadMarketCategories() {
+            try {
+                const response = await fetch(`${API_BASE}/market-categories`);
+                const categories = await response.json();
+                const select = document.getElementById('marketCategory');
+                select.innerHTML = '<option value="">Select Category...</option>';
+                categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('Error loading market categories: ' + error.message, 'error');
+            }
+        }
+
+        // Handle category change
+        async function handleCategoryChange() {
+            const categoryId = document.getElementById('marketCategory').value;
+            if (!categoryId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/markets?categoryId=${categoryId}`);
+                const markets = await response.json();
+                const select = document.getElementById('market');
+                select.innerHTML = '<option value="">Select Market...</option>';
+                markets.forEach(market => {
+                    const option = document.createElement('option');
+                    option.value = market.epic;
+                    option.textContent = `${market.name} (${market.epic}) - Bid: ${market.bid}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('Error loading markets: ' + error.message, 'error');
+            }
+        }
+
+        // Handle market change
+        async function handleMarketChange() {
+            const market = document.getElementById('market').value;
+            if (!market) return;
+
+            selectedMarket = market;
+            loadChartData();
+            loadRSIData();
+            updateChartLink();
+        }
+
+        // Load chart data
+        async function loadChartData() {
+            if (!selectedMarket) return;
+
+            document.getElementById('loadingChart').classList.add('show');
+            try {
+                const response = await fetch(`${API_BASE}/chart/${selectedMarket}?resolution=HOUR_4&max=100`);
+                const data = await response.json();
+
+                const labels = data.prices.map(p => new Date(p.timestamp).toLocaleString());
+                const closePrices = data.prices.map(p => p.close);
+                const highPrices = data.prices.map(p => p.high);
+                const lowPrices = data.prices.map(p => p.low);
+
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Close Price',
+                                data: closePrices,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'High',
+                                data: highPrices,
+                                borderColor: '#11998e',
+                                borderDash: [5, 5],
+                                fill: false
+                            },
+                            {
+                                label: 'Low',
+                                data: lowPrices,
+                                borderColor: '#eb3349',
+                                borderDash: [5, 5],
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+
+                document.getElementById('loadingChart').classList.remove('show');
+            } catch (error) {
+                showStatus('Error loading chart: ' + error.message, 'error');
+                document.getElementById('loadingChart').classList.remove('show');
+            }
+        }
+
+        // Load RSI data
+        async function loadRSIData() {
+            if (!selectedMarket) return;
+
+            document.getElementById('loadingRSI').classList.add('show');
+            try {
+                const response = await fetch(`${API_BASE}/rsi/${selectedMarket}`);
+                const data = await response.json();
+
+                document.getElementById('rsiValue').textContent = data.rsiValue.toFixed(2);
+                document.getElementById('positionValue').textContent = data.currentPosition;
+
+                updateSignalBadge(data.signal);
+
+                // Update RSI chart (simplified - shows current value)
+                if (rsiChartInstance) {
+                    rsiChartInstance.destroy();
+                }
+
+                const ctx = document.getElementById('rsiChart').getContext('2d');
+                rsiChartInstance = new Chart(ctx, {
+                    type: 'gauge',
+                    data: {
+                        datasets: [{
+                            data: [data.rsiValue],
+                            backgroundColor: [getRSIColor(data.rsiValue)],
+                            borderColor: '#333',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+
+                document.getElementById('loadingRSI').classList.remove('show');
+            } catch (error) {
+                showStatus('Error loading RSI: ' + error.message, 'error');
+                document.getElementById('loadingRSI').classList.remove('show');
+            }
+        }
+
+        // Update signal badge
+        function updateSignalBadge(signal) {
+            const badgeDiv = document.getElementById('signalBadge');
+            let badgeClass = 'neutral';
+            let badgeText = 'NEUTRAL';
+
+            if (signal === 'OVERBOUGHT') {
+                badgeClass = 'sell';
+                badgeText = '🔴 OVERBOUGHT (SELL)';
+            } else if (signal === 'OVERSOLD') {
+                badgeClass = 'buy';
+                badgeText = '🟢 OVERSOLD (BUY)';
+            }
+
+            badgeDiv.innerHTML = `<div class="signal-badge ${badgeClass}">${badgeText}</div>`;
+        }
+
+        // Get RSI color
+        function getRSIColor(rsi) {
+            if (rsi > 70) return '#eb3349'; // Overbought - Red
+            if (rsi < 30) return '#11998e'; // Oversold - Green
+            return '#ffc107'; // Neutral - Yellow
+        }
+
+        // Start trading bot
+        async function startTradingBot() {
+            if (!selectedMarket) {
+                showStatus('Please select a market first', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/start-trading?epic=${selectedMarket}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    botRunning = true;
+                    showStatus(`Trading bot started for ${selectedMarket}`, 'success');
+                } else {
+                    showStatus(`Error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus('Error starting bot: ' + error.message, 'error');
+            }
+        }
+
+        // Stop trading bot
+        async function stopTradingBot() {
+            botRunning = false;
+            showStatus('Trading bot stopped', 'info');
+        }
+
+        // Update chart link
+        function updateChartLink() {
+            if (selectedMarket) {
+                const link = document.getElementById('chartLink');
+                link.href = `https://capital.com/trading/platform/charting?ids=${selectedMarket}`;
+                link.style.display = 'inline-block';
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const msgDiv = document.getElementById('statusMessage');
+            msgDiv.textContent = message;
+            msgDiv.className = `status-message ${type}`;
+            setTimeout(() => {
+                msgDiv.className = 'status-message';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

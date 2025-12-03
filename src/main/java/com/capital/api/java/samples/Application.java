@@ -37,12 +37,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.math.BigDecimal;
 import java.util.*;
 
 @SpringBootApplication
 @EnableScheduling
+@Controller
 public class Application implements CommandLineRunner {
 	private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
@@ -93,8 +96,18 @@ public class Application implements CommandLineRunner {
 		wsClient.ping();
 	}
 
+	@GetMapping("/")
+	public String indexRedirect() {
+		return "redirect:/trading-bot";
+	}
+
+	@GetMapping("/trading-bot")
+	public String tradingBot() {
+		return "trading-bot";
+	}
+
 	public static void main(String[] args) {
-		new SpringApplicationBuilder(Application.class).web(WebApplicationType.NONE).run(args);
+		new SpringApplicationBuilder(Application.class).web(WebApplicationType.SERVLET).run(args);
 	}
 
 	private ConversationContext authenticate(String identifier, String password, boolean encryptedPassword, String apiKey) {

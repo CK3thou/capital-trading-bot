@@ -12,4 +12,10 @@ public class CapitalUserConfig {
     private String password;
     private String apiKey;
     private Enviroment env;
+    
+    // Trading Bot Configuration
+    private String selectedMarketEpic;
+    private String selectedAccountId;
+    private String selectedAccountType;
+    private Boolean botEnabled = false;
 }

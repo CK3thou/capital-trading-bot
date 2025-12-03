@@ -1,11 +1,23 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: Trading Bot
+  mvc:
+    static-path-pattern: /static/**
+    
 capital.api:
   domain.URL: https://api-capital.backend-capital.com
 capital.api.demo:
   domain.URL: https://demo-api-capital.backend-capital.com
 capital.user:
-  login:
-  password:
-  apiKey:
+  login: chishimba.kabwe@gmail.com
+  password: -Cullbanga#1
+  apiKey: MDQRi4km1ODEzGeF
+  env: DEMO
 settings:
   epics: ["NVDA", "TSLA", "GOLD", "SILVER", "NATURALGAS", "OIL_CRUDE"]
   resolutions: ["HOUR"]
